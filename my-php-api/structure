@@ -1,0 +1,1753 @@
+
+my-php-api/
+├── index.php
+├── config.php
+├── auth/
+│   ├── login.php
+│   ├── register.php
+├── products/
+│   ├── getProducts.php
+│   ├── addProduct.php
+│   ├── updateProduct.php
+│   ├── deleteProduct.php
+├── cart/
+│   ├── getCart.php
+│   ├── addToCart.php
+│   ├── removeFromCart.php
+├── checkout/
+│   ├── processCheckout.php
+├── user/
+│   ├── getUser.php
+│   ├── updateUser.php
+│   ├── deleteUser.php
+
+my-react-app/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── Home.js
+│   │   ├── Product.js
+│   │   ├── Cart.js
+│   │   ├── Checkout.js
+│   │   ├── Login.js
+│   │   ├── Register.js
+│   │   ├── Admin.js
+│   │   ├── About.js
+│   │   ├── Profile.js
+│   ├── pages/
+│   │   ├── HomePage.js
+│   │   ├── ProductPage.js
+│   │   ├── CartPage.js
+│   │   ├── CheckoutPage.js
+│   │   ├── LoginPage.js
+│   │   ├── RegisterPage.js
+│   │   ├── AdminPage.js
+│   │   ├── AboutPage.js
+│   │   ├── ProfilePage.js
+│   ├── App.js
+│   ├── index.js
+├── package.json
+
+
+
+
+
+
+ok now here is the full code of all backend api :
+
+└── 📁my-php-api
+    └── 📁admin
+        └── addProduct.php
+```php
+    <?php
+    // Enable error reporting
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Handle CORS
+    header("Access-Control-Allow-Origin: http://localhost:3000");
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    header("Access-Control-Allow-Credentials: true");
+
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+
+    // Database connection
+    $host = 'localhost';
+    $db_name = 'ecommerce';
+    $username = 'root';
+    $password = '';
+    $conn = new mysqli($host, $username, $password, $db_name);
+
+    if ($conn->connect_error) {
+        echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+        exit;
+    }
+
+    // Get JSON input from POST request
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!isset($data['name']) || !isset($data['description']) || !isset($data['price']) || !isset($data['image'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid input']);
+        exit;
+    }
+
+    $name = $data['name'];
+    $description = $data['description'];
+    $price = $data['price'];
+    $image = $data['image'];
+
+    $sql = "INSERT INTO products (name, description, price, image) VALUES (?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
+        exit;
+    }
+    $stmt->bind_param('ssds', $name, $description, $price, $image);
+    if ($stmt->execute()) {
+        echo json_encode(['status' => 'success', 'message' => 'Product added successfully']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Execute failed: ' . $stmt->error]);
+    }
+
+    $conn->close();
+    ?>
+
+```
+        └── getOrderInfo.php
+```php
+<?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Handle CORS
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Get order_id from query string
+$order_id = $_GET['order_id'];
+
+if (!isset($order_id)) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid input']);
+    exit;
+}
+
+// Get order information
+$sql = "SELECT o.*, oi.product_id, oi.quantity, oi.price
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.id = ?";
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
+    exit;
+}
+$stmt->bind_param('i', $order_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$order_info = [];
+while ($row = $result->fetch_assoc()) {
+    $order_info[] = $row;
+}
+
+echo json_encode(['status' => 'success', 'data' => $order_info]);
+
+$conn->close();
+?>
+
+```
+        └── getOrders.php
+```php
+<?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Handle CORS
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Get orders
+$sql = "SELECT * FROM orders";
+$result = $conn->query($sql);
+
+$orders = [];
+while ($row = $result->fetch_assoc()) {
+    $orders[] = $row;
+}
+
+echo json_encode(['status' => 'success', 'data' => $orders]);
+
+$conn->close();
+?>
+
+```
+        └── getStatistics.php
+   ```php
+<?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Handle CORS
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Get statistics about order statuses
+$sql = "SELECT status, COUNT(*) AS count FROM orders GROUP BY status";
+$result = $conn->query($sql);
+
+$stats = [];
+while ($row = $result->fetch_assoc()) {
+    $stats[] = $row;
+}
+
+echo json_encode(['status' => 'success', 'data' => $stats]);
+
+$conn->close();
+?>
+    
+```
+     └── updateOrderStatus.php
+   
+```php
+<?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Handle CORS
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Get JSON input from POST request
+$data = json_decode(file_get_contents('php://input'), true);
+if (!isset($data['order_id']) || !isset($data['status'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid input']);
+    exit;
+}
+
+$order_id = $data['order_id'];
+$status = $data['status'];
+
+$sql = "UPDATE orders SET status = ? WHERE id = ?";
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    echo json_encode(['status' => 'error', 'message' => 'Prepare failed: ' . $conn->error]);
+    exit;
+}
+$stmt->bind_param('si', $status, $order_id);
+if ($stmt->execute()) {
+    echo json_encode(['status' => 'success', 'message' => 'Order status updated successfully']);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Execute failed: ' . $stmt->error]);
+}
+
+$conn->close();
+?>
+
+```
+ └── 📁auth
+        └── checkSession.php
+```php
+<?php
+session_start();
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0); // Stop execution for preflight requests
+}
+
+if (isset($_SESSION['user_id'])) {
+    echo json_encode(["status" => "success", "user_id" => $_SESSION['user_id']]);
+} else {
+    echo json_encode(["status" => "error", "message" => "No active session."]);
+}
+?>
+
+```   
+     └── login.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Fetch and process input data
+$data = json_decode(file_get_contents("php://input"), true);
+$username = isset($data['username']) ? $data['username'] : null;
+$password = isset($data['password']) ? $data['password'] : null;
+
+if ($username && $password) {
+    // Perform login logic
+    $stmt = $conn->prepare("SELECT id, password FROM users WHERE email = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows > 0) {
+        $stmt->bind_result($userId, $hashedPassword);
+        $stmt->fetch();
+
+        if (password_verify($password, $hashedPassword)) {
+            echo json_encode(["status" => "success", "userId" => $userId]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
+        }
+    } else {
+        echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
+    }
+
+    $stmt->close();
+} else {
+    echo json_encode(["status" => "error", "message" => "Invalid input"]);
+}
+
+$conn->close();
+?>
+
+```
+        └── profile.php
+```php
+<?php
+include('../config.php');
+include('../cors.php');  // Include CORS middleware
+
+header("Content-Type: application/json");
+
+require '../vendor/autoload.php';
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
+if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    echo json_encode(["success" => false, "message" => "Authorization header not found."]);
+    exit();
+}
+
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+$arr = explode(" ", $authHeader);
+
+if (count($arr) !== 2) {
+    echo json_encode(["success" => false, "message" => "Invalid Authorization header format."]);
+    exit();
+}
+
+$jwt = $arr[1];
+$secret_key = "YOUR_SECRET_KEY";
+
+try {
+    $decoded = JWT::decode($jwt, new Key($secret_key, 'HS256'));
+    $user_id = $decoded->data->id;
+
+    // Fetch user profile from the database
+    $sql = "SELECT id, username, email FROM users WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+    echo json_encode([
+        "success" => true,
+        "user" => $user
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Access denied.",
+        "error" => $e->getMessage()
+    ]);
+}
+
+$conn->close();
+?>
+
+```
+        └── register.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// Fetch and process input data
+$data = json_decode(file_get_contents("php://input"), true);
+$username = isset($data['username']) ? $data['username'] : null;
+$password = isset($data['password']) ? $data['password'] : null;
+
+if ($username === null || $password === null) {
+    echo json_encode(["status" => "error", "message" => "Invalid input."]);
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username_db = 'root';
+$password_db = '';
+$conn = new mysqli($host, $username_db, $password_db, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Check if the username already exists
+$user_check_sql = "SELECT id FROM users WHERE email = ?";
+$user_stmt = $conn->prepare($user_check_sql);
+
+if (!$user_stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare statement failed: " . $conn->error]);
+    $conn->close();
+    exit;
+}
+
+$user_stmt->bind_param("s", $username);
+$user_stmt->execute();
+$user_stmt->store_result();
+
+if ($user_stmt->num_rows > 0) {
+    echo json_encode(["status" => "error", "message" => "Username already exists."]);
+    $user_stmt->close();
+    $conn->close();
+    exit;
+}
+$user_stmt->close();
+
+// Hash the password
+$hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+// Insert the new user into the database
+$sql = "INSERT INTO users (email, password) VALUES (?, ?)";
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare statement failed: " . $conn->error]);
+    $conn->close();
+    exit;
+}
+
+$stmt->bind_param("ss", $username, $hashed_password);
+
+if ($stmt->execute()) {
+    echo json_encode(["status" => "success", "message" => "User registered successfully."]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Execute failed: " . $stmt->error]);
+}
+
+$stmt->close();
+$conn->close();
+?>
+
+```
+        └── validate-token.php
+```php
+<?php
+include 'db.php';
+require 'vendor/autoload.php'; // Include the Composer autoload file
+
+use \Firebase\JWT\JWT;
+
+// Set your secret key here
+$secret_key = "YOUR_SECRET_KEY";
+
+// Set the content type to JSON
+header('Content-Type: application/json');
+
+// Get the JSON input
+$data = json_decode(file_get_contents('php://input'), true);
+
+if (isset($data['action']) && $data['action'] === 'generate') {
+    // Generate token action
+    if (!isset($data['email']) || !isset($data['password'])) {
+        echo json_encode(['success' => false, 'message' => 'Email and password are required']);
+        exit();
+    }
+
+    $email = $data['email'];
+    $password = $data['password'];
+
+    // Prepare and execute the SQL statement
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        // Verify the password
+        if (password_verify($password, $user['password'])) {
+            // Create a token payload
+            $payload = [
+                'iss' => 'yourdomain.com', // Issuer
+                'iat' => time(), // Issued at
+                'exp' => time() + (60 * 60), // Expiration time (1 hour)
+                'sub' => $user['id'], // Subject (user ID)
+                'email' => $user['email'] // User email
+            ];
+
+            // Encode the payload to create a token
+            $token = JWT::encode($payload, $secret_key);
+
+            // Save the token in the database (optional)
+            $stmt = $conn->prepare("UPDATE users SET token = ? WHERE id = ?");
+            $stmt->bind_param("si", $token, $user['id']);
+            $stmt->execute();
+
+            echo json_encode(['success' => true, 'token' => $token]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid password']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+    }
+
+    $stmt->close();
+} elseif (isset($data['action']) && $data['action'] === 'validate') {
+    // Validate token action
+    if (!isset($data['token'])) {
+        echo json_encode(['valid' => false]);
+        exit();
+    }
+
+    $token = $data['token'];
+
+    try {
+        $decoded = JWT::decode($token, $secret_key, array('HS256'));
+        echo json_encode(['valid' => true, 'data' => (array)$decoded]);
+    } catch (Exception $e) {
+        echo json_encode(['valid' => false, 'message' => $e->getMessage()]);
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid action']);
+}
+
+// Close the connection
+$conn->close();
+?>
+
+```
+    └── 📁cart
+        └── addToCart.php
+```php
+<?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: http://localhost:3000'); // Adjust the URL to match your React app's origin
+header('Access-Control-Allow-Credentials: true'); // Allow credentials
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+$data = json_decode(file_get_contents("php://input"), true);
+$user_id = isset($data['user_id']) ? $data['user_id'] : null;
+$product_id = isset($data['product_id']) ? $data['product_id'] : null;
+$quantity = isset($data['quantity']) ? $data['quantity'] : 1;
+
+if ($user_id === null || $product_id === null || $quantity === null) {
+    echo json_encode(["status" => "error", "message" => "Invalid input."]);
+    exit;
+}
+
+// Check if user_id exists
+$user_check_sql = "SELECT id FROM users WHERE id = ?";
+$user_stmt = $conn->prepare($user_check_sql);
+$user_stmt->bind_param("i", $user_id);
+$user_stmt->execute();
+$user_stmt->store_result();
+
+if ($user_stmt->num_rows === 0) {
+    echo json_encode(["status" => "error", "message" => "User not found."]);
+    $user_stmt->close();
+    $conn->close();
+    exit;
+}
+$user_stmt->close();
+
+// Check if product_id exists
+$product_check_sql = "SELECT id FROM products WHERE id = ?";
+$product_stmt = $conn->prepare($product_check_sql);
+$product_stmt->bind_param("i", $product_id);
+$product_stmt->execute();
+$product_stmt->store_result();
+
+if ($product_stmt->num_rows === 0) {
+    echo json_encode(["status" => "error", "message" => "Product not found."]);
+    $product_stmt->close();
+    $conn->close();
+    exit;
+}
+$product_stmt->close();
+
+// Insert or update cart
+$sql = "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?) 
+        ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)";
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare failed: " . $conn->error]);
+    exit;
+}
+
+$stmt->bind_param("iii", $user_id, $product_id, $quantity);
+
+if ($stmt->execute()) {
+    echo json_encode(["status" => "success", "message" => "Item added to cart."]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Execute failed: " . $stmt->error]);
+}
+
+$stmt->close();
+$conn->close();
+?>
+
+```
+        └── getCart.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000"); // Adjust the URL to match your React app's origin
+header("Access-Control-Allow-Credentials: true"); // Allow credentials
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0); // Stop execution for preflight requests
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Check if user_id is provided
+$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+
+if ($user_id <= 0) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid user ID.']);
+    exit;
+}
+
+// Fetch cart items
+$sql = "SELECT c.id,c.product_id, c.quantity, p.name, p.price, p.image
+        FROM cart c
+        JOIN products p ON c.product_id = p.id
+        WHERE c.user_id = ?";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$cart_items = [];
+while ($row = $result->fetch_assoc()) {
+    $cart_items[] = $row;
+}
+
+echo json_encode($cart_items);
+
+$stmt->close();
+$conn->close();
+
+?>
+
+```
+        └── isInCart.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+$data = json_decode(file_get_contents("php://input"), true);
+$user_id = isset($data['user_id']) ? $data['user_id'] : null;
+$product_id = isset($data['product_id']) ? $data['product_id'] : null;
+
+if ($user_id === null || $product_id === null) {
+    echo json_encode(["status" => "error", "message" => "Invalid input."]);
+    exit;
+}
+
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+$sql = "SELECT id FROM cart WHERE user_id = ? AND product_id = ?";
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare statement failed: " . $conn->error]);
+    $conn->close();
+    exit;
+}
+
+$stmt->bind_param("ii", $user_id, $product_id);
+$stmt->execute();
+$stmt->store_result();
+
+$isInCart = $stmt->num_rows > 0;
+
+echo json_encode(["status" => "success", "isInCart" => $isInCart]);
+
+$stmt->close();
+$conn->close();
+?>
+
+```
+        └── removeFromCart.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+$data = json_decode(file_get_contents("php://input"));
+
+$user_id = $data->user_id;
+$product_id = $data->product_id;
+
+if ($user_id === null || $product_id === null) {
+    echo json_encode(["status" => "error", "message" => "Invalid input."]);
+    exit;
+}
+
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+$sql = "DELETE FROM cart WHERE user_id = ? AND id = ?";
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare statement failed: " . $conn->error]);
+    $conn->close();
+    exit;
+}
+
+$stmt->bind_param("ii", $user_id, $product_id);
+$stmt->execute();
+
+if ($stmt->affected_rows > 0) {
+    echo json_encode(["status" => "success", "message" => "Item removed from cart."]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Failed to remove item from cart."]);
+}
+
+$stmt->close();
+$conn->close();
+?>
+
+```
+        └── removeFromCartmain.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+$data = json_decode(file_get_contents("php://input"), true);
+$user_id = isset($data['user_id']) ? $data['user_id'] : null;
+$product_id = isset($data['product_id']) ? $data['product_id'] : null;
+
+if ($user_id === null || $product_id === null) {
+    echo json_encode(["status" => "error", "message" => "Invalid input."]);
+    exit;
+}
+
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+$sql = "DELETE FROM cart WHERE user_id = ? AND product_id = ?";
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare statement failed: " . $conn->error]);
+    $conn->close();
+    exit;
+}
+
+$stmt->bind_param("ii", $user_id, $product_id);
+
+if ($stmt->execute()) {
+    echo json_encode(["status" => "success", "message" => "Item removed from cart."]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Execute failed: " . $stmt->error]);
+}
+
+$stmt->close();
+$conn->close();
+?>
+
+```
+        └── updateQuantity.php
+```php
+<?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+$data = json_decode(file_get_contents("php://input"));
+
+$user_id = $data->user_id ?? null;
+$product_id = $data->product_id ?? null;
+$quantity = $data->quantity ?? null;
+
+if ($user_id === null || $product_id === null || $quantity === null || $quantity < 1) {
+    echo json_encode(["status" => "error", "message" => "Invalid input."]);
+    exit;
+}
+
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+$sql = "UPDATE cart SET quantity = ? WHERE user_id = ? AND id = ?";
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    echo json_encode(["status" => "error", "message" => "Prepare statement failed: " . $conn->error]);
+    $conn->close();
+    exit;
+}
+
+$stmt->bind_param("iii", $quantity, $user_id, $product_id);
+$stmt->execute();
+
+if ($stmt->affected_rows > 0) {
+    echo json_encode(["status" => "success", "message" => "Quantity updated successfully."]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Failed to update quantity."]);
+}
+
+$stmt->close();
+$conn->close();
+?>
+
+```
+    └── 📁checkout
+        └── processCheckout.php
+```php
+<?php
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Handle CORS
+header("Access-Control-Allow-Origin: http://localhost:3000"); // Replace with your frontend URL
+header("Access-Control-Allow-Methods: POST, OPTIONS"); // Allow POST and OPTIONS methods
+header("Access-Control-Allow-Headers: Content-Type, Authorization"); // Allow headers
+header("Access-Control-Allow-Credentials: true"); // Allow credentials
+
+// Check for preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204); // No content response
+    exit;
+}
+
+// Database connection
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    echo json_encode(["status" => "error", "message" => "Connection failed: " . $conn->connect_error]);
+    exit;
+}
+
+// Get JSON input from POST request
+$data = json_decode(file_get_contents('php://input'), true);
+if (!isset($data['user_id']) || !isset($data['address'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid input']);
+    exit;
+}
+
+$user_id = $data['user_id'];
+$address = $data['address'];
+
+try {
+    // Start a transaction
+    $conn->begin_transaction();
+
+    // Fetch cart items
+    $sql = "SELECT c.id, c.product_id, c.quantity, p.name, p.price, p.image
+            FROM cart c
+            JOIN products p ON c.product_id = p.id
+            WHERE c.user_id = ?";
+    $stmt = $conn->prepare($sql);
+    
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // Prepare order items array
+    $cart_items = [];
+    while ($row = $result->fetch_assoc()) {
+        $cart_items[] = $row;
+    }
+
+    if (empty($cart_items)) {
+        echo json_encode(['status' => 'error', 'message' => 'Cart is empty']);
+        $conn->rollback();
+        exit;
+    }
+
+    // Calculate the total price
+    $total = 0;
+    foreach ($cart_items as $item) {
+        $total += $item['price'] * $item['quantity'];
+    }
+
+    // Insert order into orders table
+    $sql = "INSERT INTO orders (user_id, total, address, status) VALUES (?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $status = 'pending'; // Default status
+
+    $stmt->bind_param('iiss', $user_id, $total, $address, $status);
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed: " . $stmt->error);
+    }
+    $order_id = $stmt->insert_id;
+
+    // Insert order items into order_items table
+    $sql = 'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)';
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+
+    foreach ($cart_items as $item) {
+        $stmt->bind_param('iiid', $order_id, $item['product_id'], $item['quantity'], $item['price']);
+        if (!$stmt->execute()) {
+            throw new Exception("Execute failed: " . $stmt->error);
+        }
+    }
+
+    // Commit transaction
+    $conn->commit();
+
+    // Clear the cart
+    $sql = 'DELETE FROM cart WHERE user_id = ?';
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+    $stmt->bind_param('i', $user_id);
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed: " . $stmt->error);
+    }
+
+    echo json_encode(['status' => 'success', 'message' => 'Order placed successfully']);
+} catch (Exception $e) {
+    // Rollback transaction if something failed
+    $conn->rollback();
+    echo json_encode(['status' => 'error', 'message' => 'Failed to process order: ' . $e->getMessage()]);
+}
+
+$conn->close();
+?>
+
+```
+    └── composer.json
+    └── composer.lock
+    └── composer.phar
+    └── config.php
+```php
+<?php
+$host = 'localhost';
+$db_name = 'ecommerce';
+$username = 'root';
+$password = '';
+
+$conn = new mysqli($host, $username, $password, $db_name);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Allow CORS
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    exit(0); // Exit for preflight requests
+}
+?>
+
+```
+    └── cors.php
+```php
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+```
+    └── 📁images
+        └── AI.png
+        └── AI2.png
+        └── pand13-12.png
+        └── Screenshot 2023-12-04 050510.png
+        └── Screenshot 2023-12-04 051235.png
+        └── Screenshot 2023-12-15 230914.png
+        └── Screenshot 2024-05-20 121857.png
+    └── index.php
+    └── 📁products
+        └── deleteProduct.php
+        └── getProducts.php
+```php
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Content-Type: application/json"); // Set content type to JSON
+
+include('../config.php');
+header("Content-Type: application/json");
+
+$sql = "SELECT * FROM products";
+$result = $conn->query($sql);
+$products = array();
+
+if ($result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $products[] = $row;
+    }
+}
+
+echo json_encode($products);
+
+$conn->close();
+?>
+
+```
+        └── updateProduct.php
+        └── uploadImage.php
+    └── structure
+    └── 📁user
+        └── deleteUser.php
+        └── getUser.php
+```php
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+include('../config.php');
+
+$user_id = $_GET['user_id'];
+
+$sql = "SELECT id, name, email, role FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+
+if ($stmt) {
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+    echo json_encode($user);
+    $stmt->close();
+} else {
+    echo json_encode(["error" => "Database error"]);
+}
+
+$conn->close();
+?>
+
+```
+        └── updateUser.php
+
+
+
+
+write me all backend codes
+this my database 
+
+ecommerce
+admins
+Column Type Null Default Comments
+id (Primary) int(11) No
+name varchar(100) Yes NULL
+email varchar(100) Yes NULL
+password varchar(255) Yes NULL
+created_at timestamp No current_timestamp()
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 6 A No
+email BTREE Yes No email 6 A Yes
+admin_sessions
+Column Type Null Default Comments
+id (Primary) int(11) No
+user_id int(11) No
+session_number int(11) No
+token varchar(255) No
+expiration_time timestamp No current_timestamp()
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 5 A No
+user_id BTREE No No user_id 2 A No
+cart
+Column Type Null Default Comments
+id (Primary) int(11) No
+user_id int(11) Yes NULL
+product_id int(11) Yes NULL
+quantity int(11) Yes NULL
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 4 A No
+user_id BTREE Yes No
+user_id 2 A Yes
+product_id 4 A Yes
+product_id BTREE No No product_id 4 A Yes
+7/30/24, 2:43 AM localhost / 127.0.0.1 / ecommerce | phpMyAdmin 5.2.1
+localhost/phpmyadmin/index.php?route=/database/data-dictionary&db=ecommerce&goto=index.php%3Froute%3D%2Fdatabase%2Fstructure 1/3
+orders
+Column Type Null Default Comments
+id (Primary) int(11) No
+user_id int(11) Yes NULL
+total int(11) No
+address varchar(255) No
+status varchar(50) No pending
+created_at timestamp No current_timestamp()
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 5 A No
+user_id BTREE No No user_id 2 A Yes
+order_items
+Column Type Null Default Comments
+id (Primary) int(11) No
+order_id int(11) Yes NULL
+product_id int(11) Yes NULL
+quantity int(11) Yes NULL
+price decimal(10,2) No
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 5 A No
+order_id BTREE No No order_id 5 A Yes
+product_id BTREE No No product_id 2 A Yes
+products
+Column Type Null Default Comments
+id (Primary) int(11) No
+name varchar(100) No
+description text Yes NULL
+price decimal(10,2) No
+image varchar(255) Yes NULL
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 5 A No
+7/30/24, 2:43 AM localhost / 127.0.0.1 / ecommerce | phpMyAdmin 5.2.1
+localhost/phpmyadmin/index.php?route=/database/data-dictionary&db=ecommerce&goto=index.php%3Froute%3D%2Fdatabase%2Fstructure 2/3
+users
+Column Type Null Default Comments
+id (Primary) int(11) No
+name varchar(50) No
+password varchar(255) No
+email varchar(100) No
+created_at timestamp No current_timestamp()
+role enum('user', 'admin') Yes user
+address varchar(255) No
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 13 A No
+user_sessions
+Column Type Null Default Comments
+id (Primary) int(11) No
+user_id int(11) No
+session_number int(11) No
+token varchar(255) No
+expiration_time datetime No
+Indexes
+Keyname Type Unique Packed Column Cardinality Collation Null Comment
+PRIMARY BTREE Yes No id 29 A No
+user_id BTREE No No user_id 4 A No
+7/30/24, 2:43 AM localhost / 127.0.0.1 / ecommerce | phpMyAdmin 5.2.1
+
+
+
+
+
+
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Modal from 'react-modal';
+import { useNavigate } from 'react-router-dom';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Title } from 'chart.js';
+// import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS
+
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Title);
+
+const AdminPage = () => {
+    const [orders, setOrders] = useState([]);
+    const [filteredOrders, setFilteredOrders] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [statistics, setStatistics] = useState([]);
+    const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '', image: '' });
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [newUser, setNewUser] = useState({ name: '', email: '', password: '' });
+    const [chartData, setChartData] = useState({});
+    const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [orderDetails, setOrderDetails] = useState(null);
+    const [activeSection, setActiveSection] = useState('dashboard');
+    const navigate = useNavigate();
+
+    if (!localStorage.getItem('tokenAdmin')) {
+        navigate('/adminlogin');
+    }
+
+    useEffect(() => {
+        fetchOrders();
+        fetchProducts();
+        fetchUsers();
+        fetchStatistics();
+    }, []);
+
+    useEffect(() => {
+        if (orders.length > 0) {
+            prepareChartData();
+            setFilteredOrders(orders); // Initialize with all orders
+        }
+    }, [orders]);
+
+    const fetchOrders = async () => {
+        try {
+            const response = await axios.get('http://localhost/my-php-api/admin/getOrders.php');
+            setOrders(response.data.data);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+        }
+    };
+
+    const fetchProducts = async () => {
+        try {
+            const response = await axios.get('http://localhost/my-php-api/products/getProducts.php');
+            setProducts(response.data);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const response = await axios.get('http://localhost/my-php-api/admin/getUsers.php');
+            setUsers(response.data.data);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
+
+    const fetchStatistics = async () => {
+        try {
+            const response = await axios.get('http://localhost/my-php-api/admin/getStatistics.php');
+            setStatistics(response.data.data);
+        } catch (error) {
+            console.error('Error fetching statistics:', error);
+        }
+    };
+
+    const prepareChartData = () => {
+        const ordersPerDay = {};
+
+        orders.forEach(order => {
+            const date = new Date(order.created_at).toLocaleDateString();
+            ordersPerDay[date] = (ordersPerDay[date] || 0) + 1;
+        });
+
+        const labels = Object.keys(ordersPerDay);
+        const data = Object.values(ordersPerDay);
+
+        setChartData({
+            labels,
+            datasets: [
+                {
+                    label: 'Number of Orders per Day',
+                    data,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(38, 143, 255, 0.2)',
+                    fill: true,
+                    tension: 0.1,
+                },
+            ],
+        });
+    };
+
+    const handleAddProduct = async () => {
+        try {
+            await axios.post('http://localhost/my-php-api/admin/addProduct.php', newProduct);
+            setNewProduct({ name: '', description: '', price: '', image: '' });
+            fetchProducts();
+        } catch (error) {
+            console.error('Error adding product:', error);
+        }
+    };
+
+    const handleEditProduct = async () => {
+        try {
+            await axios.post('http://localhost/my-php-api/admin/editProduct.php', selectedProduct);
+            setSelectedProduct(null);
+            fetchProducts();
+        } catch (error) {
+            console.error('Error editing product:', error);
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
+        try {
+            await axios.post('http://localhost/my-php-api/products/deleteProduct.php', { product_id: productId });
+            fetchProducts();
+        } catch (error) {
+            console.error('Error deleting product:', error);
+        }
+    };
+
+    const handleAddUser = async () => {
+        try {
+            await axios.post('http://localhost/my-php-api/admin/addUser.php', newUser);
+            setNewUser({ name: '', email: '', password: '' });
+            fetchUsers();
+        } catch (error) {
+            console.error('Error adding user:', error);
+        }
+    };
+
+    const handleDeleteUser = async (userId) => {
+        try {
+            await axios.post('http://localhost/my-php-api/admin/deleteUser.php', { user_id: userId });
+            fetchUsers();
+        } catch (error) {
+            console.error('Error deleting user:', error);
+        }
+    };
+
+    const handleUpdateOrderStatus = async (orderId, status) => {
+        try {
+            await axios.post('http://localhost/my-php-api/admin/updateOrderStatus.php', { order_id: orderId, status });
+            setModalIsOpen(false);
+            fetchOrders();
+        } catch (error) {
+            console.error('Error updating order status:', error);
+        }
+    };
+
+    const handleGetOrderInfo = async (orderId) => {
+        try {
+            const response = await axios.get(`http://localhost/my-php-api/admin/getOrderInfo.php?order_id=${orderId}`);
+            setOrderDetails(response.data.data);
+            setModalIsOpen(true);
+        } catch (error) {
+            console.error('Error getting order info:', error);
+        }
+    };
+
+    const closeModal = () => {
+        setModalIsOpen(false);
+        setOrderDetails(null);
+    };
+
+    const filterOrders = (status) => {
+        if (status === 'all') {
+            setFilteredOrders(orders);
+        } else {
+            setFilteredOrders(orders.filter(order => order.status === status));
+        }
+    };
+
+    return (
+        <div className="container-fluid admin-page">
+            <div className="row">
+                <nav className="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                    <div className="position-sticky">
+                        <ul className="nav flex-column">
+                            <li className="nav-item">
+                                <button className={`nav-link ${activeSection === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSection('dashboard')}>Dashboard</button>
+                            </li>
+                            <li className="nav-item">
+                                <button className={`nav-link ${activeSection === 'products' ? 'active' : ''}`} onClick={() => setActiveSection('products')}>Products</button>
+                            </li>
+                            <li className="nav-item">
+                                <button className={`nav-link ${activeSection === 'addProduct' ? 'active' : ''}`} onClick={() => setActiveSection('addProduct')}>Add Product</button>
+                            </li>
+                            <li className="nav-item">
+                                <button className={`nav-link ${activeSection === 'users' ? 'active' : ''}`} onClick={() => setActiveSection('users')}>Users</button>
+                            </li>
+                            <li className="nav-item">
+                                <button className={`nav-link ${activeSection === 'addUser' ? 'active' : ''}`} onClick={() => setActiveSection('addUser')}>Add User</button>
+                            </li>
+                            <li className="nav-item">
+                                <button className={`nav-link ${activeSection === 'orders' ? 'active' : ''}`} onClick={() => setActiveSection('orders')}>Orders</button>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <main className="col-md-9 ms-sm-auto col-lg-10 px-4">
+                    {activeSection === 'dashboard' && (
+                        <section>
+                            <h2>Dashboard</h2>
+                            <p>Welcome to the admin dashboard!</p>
+                        </section>
+                    )}
+
+                    {activeSection === 'products' && (
+                        <section>
+                            <h2>Products</h2>
+                            <ul className="list-group">
+                                {products.map((product) => (
+                                    <li key={product.id} className="list-group-item d-flex justify-content-between align-items-center">
+                                        {product.name} - ${product.price}
+                                        <div>
+                                            <button className="btn btn-warning btn-sm me-2" onClick={() => setSelectedProduct(product)}>Edit</button>
+                                            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteProduct(product.id)}>Delete</button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+
+                    {activeSection === 'addProduct' && (
+                        <section>
+                            <h2>Add Product</h2>
+                            <div className="mb-3">
+                                <input className="form-control mb-2" type="text" placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
+                                <input className="form-control mb-2" type="text" placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} />
+                                <input className="form-control mb-2" type="number" placeholder="Price" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
+                                <input className="form-control mb-2" type="text" placeholder="Image URL" value={newProduct.image} onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })} />
+                                <button className="btn btn-primary" onClick={handleAddProduct}>Add Product</button>
+                            </div>
+                        </section>
+                    )}
+
+                    {activeSection === 'users' && (
+                        <section>
+                            <h2>Users</h2>
+                            <ul className="list-group">
+                                {users.map((user) => (
+                                    <li key={user.id} className="list-group-item d-flex justify-content-between align-items-center">
+                                        {user.name} - {user.email}
+                                        <button className="btn btn-danger btn-sm" onClick={() => handleDeleteUser(user.id)}>Delete</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+
+                    {activeSection === 'addUser' && (
+                        <section>
+                            <h2>Add User</h2>
+                            <div className="mb-3">
+                                <input className="form-control mb-2" type="text" placeholder="Name" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+                                <input className="form-control mb-2" type="email" placeholder="Email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+                                <input className="form-control mb-2" type="password" placeholder="Password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
+                                <button className="btn btn-primary" onClick={handleAddUser}>Add User</button>
+                            </div>
+                        </section>
+                    )}
+
+                    {activeSection === 'orders' && (
+                        <section>
+                            <h2>Orders</h2>
+                            <div className="mb-3">
+                                <button className="btn btn-secondary me-2" onClick={() => filterOrders('shipped')}>Shipped</button>
+                                <button className="btn btn-secondary me-2" onClick={() => filterOrders('pending')}>Pending</button>
+                                <button className="btn btn-secondary me-2" onClick={() => filterOrders('completed')}>Completed</button>
+                                <button className="btn btn-secondary" onClick={() => filterOrders('all')}>All</button>
+                            </div>
+                            <div>
+                                <h3>Orders Over Time</h3>
+                                <div className="chart-container mb-4" style={{ position: 'relative', height: '400px' }}>
+                                    <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                                </div>
+                            </div>
+                            <ul className="list-group">
+                                {filteredOrders.map((order) => (
+                                    <li key={order.id} className="list-group-item d-flex justify-content-between align-items-center">
+                                        Order #{order.id} - {order.status}
+                                        <button className="btn btn-info btn-sm" onClick={() => handleGetOrderInfo(order.id)}>View Details</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+                </main>
+            </div>
+
+            {/* Order Details Modal */}
+            <Modal
+                isOpen={modalIsOpen}
+                onRequestClose={closeModal}
+                contentLabel="Order Details"
+                // className="react-modal-content"
+                overlayClassName="react-modal-overlay"  
+                style={{
+                    content: {
+                        top: '50%',
+                        left: '50%',
+                        right: 'auto',
+                        bottom: 'auto',
+                        transform: 'translate(-50%, -50%)',
+                        width: '80%',
+                        maxWidth: '600px',
+                        padding: '20px',
+                    },
+                    overlay: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    },
+                }}
+            >
+                <h2>Order Details</h2>
+                {orderDetails && (
+                    <div className="order-details">
+                        <p><strong>Order ID:</strong> {orderDetails[0].order_id}</p>
+                        <p><strong>User ID:</strong> {orderDetails[0].user_id}</p>
+                        <p><strong>Total:</strong> ${orderDetails[0].total}</p>
+                        <p><strong>Status:</strong> {orderDetails[0].status}</p>
+                        <h3>Items</h3>
+                        <ul>
+                            {orderDetails.map((item, index) => (
+                                <li key={index}>
+                                    <p><strong>Product ID:</strong> {item.product_id}</p>
+                                    <p><strong>Quantity:</strong> {item.quantity}</p>
+                                    <p><strong>Price:</strong> ${item.price}</p>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="mt-3">
+                            <button className="btn btn-success me-2" onClick={() => handleUpdateOrderStatus(orderDetails[0].id, 'completed')}>Mark as Completed</button>
+                            <button className="btn btn-warning me-2" onClick={() => handleUpdateOrderStatus(orderDetails[0].id, 'shipped')}>Mark as Shipped</button>
+                            <button className="btn btn-secondary me-2" onClick={() => handleUpdateOrderStatus(orderDetails[0].id, 'pending')}>Mark as Pending</button>
+                        </div>
+                        <button className="btn btn-danger mt-3" onClick={closeModal}>Close</button>
+                    </div>
+                )}
+            </Modal>
+        </div>
+    );
+};
+
+export default AdminPage;
+
+
+
+
+
+
+<nav className="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+<div className="position-sticky">
+    <ul className="nav flex-column">
+        <li className="nav-item">
+            
+        </li>
+        <li className="nav-item">
+        </li>
+        <li className="nav-item">
+        </li>
+        <li className="nav-item">
+        </li>
+        <li className="nav-item">
+        </li>
+        <li className="nav-item">
+        </li>
+    </ul>
+</div>
+</nav>
