@@ -1,5 +1,5 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin:*");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Credentials: true");
@@ -19,8 +19,9 @@ if ($conn->connect_error) {
 
 // Fetch and process input data
 $data = json_decode(file_get_contents("php://input"), true);
-$email = isset($data['email']) ? $data['email'] : null;
+$email = isset($data['username']) ? $data['username'] : null;
 $password = isset($data['password']) ? $data['password'] : null;
+
 
 if ($email && $password) {
     // Perform login logic
