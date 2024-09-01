@@ -104,11 +104,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($imagesJson)) {
         $sql = "UPDATE products SET name = ?, description = ?, price = ?, size = ?, color = ?, tags = ?, stock = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssdssiis', $name, $description, $price, $sizesJson, $colorsJson, $tagsJson, $stock, $id);
+        $stmt->bind_param('ssdsssis', $name, $description, $price, $sizesJson, $colorsJson, $tagsJson, $stock, $id);
     } else {
         $sql = "UPDATE products SET name = ?, description = ?, price = ?, size = ?, color = ?, tags = ?, stock = ?, image = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssdssiiss', $name, $description, $price, $sizesJson, $colorsJson, $tagsJson, $stock, $imagesJson, $id);
+        $stmt = $conn->prepare($sql);   
+        $stmt->bind_param('ssdsssiss', $name, $description, $price, $sizesJson, $colorsJson, $tagsJson, $stock, $imagesJson, $id);
     }
 
     // Execute the query
