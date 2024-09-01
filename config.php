@@ -1,10 +1,11 @@
 <?php
-$host = 'localhost';
+$host = 'ecommerce.ctsqkye6wkep.eu-north-1.rds.amazonaws.com';
 $db_name = 'ecommerce';
 $username = 'root';
-$password = '';
+$password = 'Assem123Assem';
+$port= '3306'
     
-$conn = new mysqli($host, $username, $password, $db_name);
+$conn = new mysqli($host, $username, $password, $db_name,$port);
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
